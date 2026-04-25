@@ -69,7 +69,11 @@ const ICONS = [
   { id: 'paint', label: 'Paint', icon: '🎨' },
   { id: 'games', label: 'Games', icon: '🎮' },
   { id: 'camera', label: 'Camera', icon: '📷' },
-  { id: 'contact', label: 'Contact', icon: '📧' }
+  { id: 'contact', label: 'Contact', icon: '📧' },
+  { id: 'terminal', label: 'Terminal', icon: '⌨️' },
+  { id: 'notepad', label: 'Notepad', icon: '📝' },
+  { id: 'calculator', label: 'Calculator', icon: '🧮' },
+  { id: 'recycle', label: 'Recycle Bin', icon: '🗑️' }
 ];
 
 function App() {
@@ -160,19 +164,22 @@ function App() {
   }
 
   return (
-    <div className={`desktop ${isShuttingDown ? 'shutting-down' : ''}`}>
-      {/* Desktop Icons */}
-      {ICONS.map((icon, index) => (
-        <div
-          key={icon.id}
-          className={`icon icon-${icon.id}`}
-          onClick={() => playSound('click')}
-          onDoubleClick={() => handleOpenWindow(icon.id)}
-        >
-          <img src={`data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'><rect width='48' height='48' fill='%23fff' opacity='0.2'/><text x='24' y='28' text-anchor='middle' fill='%23fff' font-size='12'>${icon.icon}</text></svg>`} alt={icon.label} />
-          <div>{icon.label}</div>
-        </div>
-      ))}
+    <div className={`desktop ${isShuttingDown ? 'shutting-down' : ''}`} onClick={() => setStartMenuOpen(false)}>
+      {/* Desktop Icons - Using flexbox to auto arrange them and override absolute classes */}
+      <div style={{ display: 'flex', flexDirection: 'column', flexWrap: 'wrap', height: 'calc(100vh - 60px)', alignContent: 'flex-start', padding: '10px', gap: '15px' }}>
+          {ICONS.map((icon) => (
+            <div
+              key={icon.id}
+              className="icon"
+              style={{ position: 'relative', width: '80px', top: 'auto', left: 'auto' }}
+              onClick={(e) => { e.stopPropagation(); playSound('click'); }}
+              onDoubleClick={(e) => { e.stopPropagation(); handleOpenWindow(icon.id); }}
+            >
+              <img src={`data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'><rect width='48' height='48' fill='%23fff' opacity='0.2'/><text x='24' y='28' text-anchor='middle' fill='%23fff' font-size='15'>${icon.icon}</text></svg>`} alt={icon.label} />
+              <div style={{ whiteSpace: 'nowrap' }}>{icon.label}</div>
+            </div>
+          ))}
+      </div>
 
       {/* Windows */}
       {openWindows.map((win) => (
@@ -190,7 +197,7 @@ function App() {
       ))}
 
       {/* Taskbar */}
-      <div className="taskbar" onClick={() => { if(!startMenuOpen) playSound('click'); }}>
+      <div className="taskbar" onClick={(e) => { e.stopPropagation(); if(!startMenuOpen) playSound('click'); }}>
         <button className="start-button" onClick={(e) => { e.stopPropagation(); playSound('click'); setStartMenuOpen(!startMenuOpen); }}>
           Start
         </button>
@@ -198,10 +205,10 @@ function App() {
           <div className="start-menu open">
             <ul>
               {ICONS.map(icon => (
-                <li key={icon.id} onClick={(e) => { e.stopPropagation(); setStartMenuOpen(false); handleOpenWindow(icon.id); }}>{icon.label}</li>
+                <li key={icon.id} onClick={(e) => { e.stopPropagation(); setStartMenuOpen(false); handleOpenWindow(icon.id); }}>{icon.icon} {icon.label}</li>
               ))}
-              <li style={{borderTop: '1px solid #333', marginTop: '5px', paddingTop: '5px'}} onClick={(e) => { e.stopPropagation(); handleShutDown(); }}>
-                  Shut Down...
+              <li style={{borderTop: '1px solid #333', marginTop: '5px', paddingTop: '5px', color: '#ff5555'}} onClick={(e) => { e.stopPropagation(); handleShutDown(); }}>
+                  ⏻ Shut Down...
               </li>
             </ul>
           </div>
@@ -213,7 +220,7 @@ function App() {
                className={`app-button ${activeWindow === win.id ? 'active' : ''}`}
                onClick={(e) => { e.stopPropagation(); focusWindow(win.id); }}
              >
-               {win.id.charAt(0).toUpperCase() + win.id.slice(1)}
+               {ICONS.find(i => i.id === win.id)?.icon} {win.id.charAt(0).toUpperCase() + win.id.slice(1)}
              </div>
           ))}
         </div>
@@ -225,7 +232,6 @@ function App() {
 
 // Window Component Header Drag handling
 const WindowTitleBar = ({ title, onClose, onMinimize, onMaximize, onFocus, updatePos, winState }) => {
-    
     const handleMouseDown = (e) => {
       onFocus();
       const startX = e.clientX;
@@ -285,7 +291,7 @@ const Window = ({ id, winState, isActive, onClose, onMinimize, onMaximize, onFoc
 
   return (
     <div
-      className={`window active`}
+      className={`window ${isActive ? 'active' : ''}`}
       style={getStyle()}
       onMouseDown={onFocus}
     >
@@ -298,8 +304,10 @@ const Window = ({ id, winState, isActive, onClose, onMinimize, onMaximize, onFoc
         updatePos={updatePos}
         winState={winState}
       />
-      <div className="window-content" onMouseDown={(e) => e.stopPropagation()}>
-        <WindowContent id={id} />
+      <div className="window-content" style={{ height: 'calc(100% - 20px)', boxSizing: 'border-box', overflow: 'hidden', padding: 0 }} onMouseDown={(e) => e.stopPropagation()}>
+        <div style={{ padding: '10px', height: '100%', boxSizing: 'border-box', overflowY: 'auto' }}>
+            <WindowContent id={id} />
+        </div>
       </div>
     </div>
   );
@@ -315,9 +323,15 @@ const WindowContent = ({ id }) => {
     case 'paint': return <PaintContent />;
     case 'games': return <GamesContent />;
     case 'camera': return <CameraContent />;
+    case 'terminal': return <TerminalContent />;
+    case 'notepad': return <NotepadContent />;
+    case 'calculator': return <CalculatorContent />;
+    case 'recycle': return <RecycleBinContent />;
     default: return <div>Unknown Window</div>;
   }
 };
+
+/* --- Existing App Components --- */
 
 const AboutContent = () => (
     <>
@@ -525,6 +539,215 @@ const CameraContent = () => {
             <button onClick={startCamera}>Start Camera</button>
             <button onClick={stopCamera}>Stop Camera</button>
             <p>(Grant permission for webcam access)</p>
+        </div>
+    );
+};
+
+
+/* --- NEW CRAZY APPLICATIONS --- */
+
+const TerminalContent = () => {
+    const [history, setHistory] = useState(['OS Terminal v1.0.0', 'Type "help" to see available commands.']);
+    const [input, setInput] = useState('');
+    const endRef = useRef(null);
+
+    const handleCommand = (e) => {
+        if(e.key === 'Enter') {
+            playSound('click');
+            const cmd = input.trim().toLowerCase();
+            const newHist = [...history, `user@host:~$ ${input}`];
+            if (cmd === 'help') {
+                newHist.push('Commands: help, clear, date, whoami, echo, sudo, matrix, rickroll');
+            } else if (cmd === 'clear') {
+                setHistory([]);
+                setInput('');
+                return;
+            } else if (cmd === 'date') {
+                newHist.push(new Date().toString());
+            } else if (cmd === 'whoami') {
+                newHist.push('root (just kidding, you are guest)');
+            } else if (cmd.startsWith('echo ')) {
+                newHist.push(input.substring(5));
+            } else if (cmd === 'sudo') {
+                newHist.push('Nice try! This incident will be reported to Santa 🎅.');
+            } else if (cmd === 'matrix') {
+                newHist.push('Wake up, Neo...\nThe Matrix has you...\nFollow the white rabbit.');
+            } else if (cmd === 'rickroll') {
+                newHist.push('Never gonna give you up\nNever gonna let you down\nNever gonna run around and desert you');
+            } else if (cmd !== '') {
+                newHist.push(`Command not found: ${cmd}`);
+            }
+            setHistory(newHist);
+            setInput('');
+            setTimeout(() => endRef.current?.scrollIntoView({ behavior: 'smooth' }), 10);
+        }
+    };
+
+    return (
+        <div style={{ backgroundColor: '#0c0c0c', color: '#0f0', fontFamily: 'monospace', height: '100%', margin: '-10px', padding: '10px', boxSizing: 'border-box', overflowY: 'auto' }} onClick={() => document.getElementById('term-input')?.focus()}>
+            {history.map((line, i) => <div key={i} style={{ whiteSpace: 'pre-wrap', marginBottom: '4px' }}>{line}</div>)}
+            <div style={{ display: 'flex', marginTop: '5px' }}>
+                <span style={{ marginRight: '8px' }}>user@host:~$</span>
+                <input 
+                    id="term-input"
+                    type="text" 
+                    value={input} 
+                    onChange={(e) => setInput(e.target.value)} 
+                    onKeyDown={handleCommand}
+                    style={{ background: 'transparent', color: '#0f0', border: 'none', outline: 'none', flexGrow: 1, fontFamily: 'monospace', fontSize: '14px' }}
+                    autoComplete="off"
+                    autoFocus
+                />
+            </div>
+            <div ref={endRef} />
+        </div>
+    );
+};
+
+const NotepadContent = () => {
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', margin: '-10px', backgroundColor: '#fff', color: '#000' }}>
+            <div style={{ borderBottom: '1px solid #ccc', padding: '5px', background: '#f0f0f0', color: '#000', fontSize: '12px', display: 'flex', gap: '10px' }}>
+                <span style={{cursor:'pointer'}}>File</span>
+                <span style={{cursor:'pointer'}}>Edit</span>
+                <span style={{cursor:'pointer'}}>Format</span>
+                <span style={{cursor:'pointer'}}>Help</span>
+            </div>
+            <textarea 
+                style={{ flexGrow: 1, resize: 'none', border: 'none', outline: 'none', padding: '10px', fontFamily: 'Arial, sans-serif', fontSize: '14px', width: '100%', boxSizing: 'border-box' }} 
+                defaultValue="Start typing your notes here..."
+            />
+        </div>
+    );
+};
+
+const CalculatorContent = () => {
+    const [calc, setCalc] = useState("");
+    const [result, setResult] = useState("");
+
+    const ops = ['/', '*', '+', '-', '.'];
+
+    const updateCalc = value => {
+        playSound('click');
+        if (
+            ops.includes(value) && calc === '' || 
+            ops.includes(value) && ops.includes(calc.slice(-1))
+        ) {
+            return;
+        }
+        setCalc(calc + value);
+        if (!ops.includes(value)) {
+            try { setResult(eval(calc + value).toString()); } catch(e) {}
+        }
+    };
+
+    const calculate = () => {
+        playSound('click');
+        try {
+            setCalc(eval(calc).toString());
+            setResult('');
+        } catch(e) {
+            setCalc('Error');
+        }
+    };
+
+    const deleteLast = () => {
+        playSound('click');
+        if (calc === '') return;
+        const value = calc.slice(0, -1);
+        setCalc(value);
+        try { setResult(eval(value).toString()); } catch(e) { setResult(''); }
+    };
+
+    const clear = () => {
+        playSound('click');
+        setCalc('');
+        setResult('');
+    };
+
+    const calcBtnStyle = { padding: '15px', fontSize: '18px', cursor: 'pointer', border: '1px solid #444', background: '#333', color: '#fff', borderRadius: '3px' };
+
+    return (
+        <div style={{ background: '#222', margin: '-10px', padding: '15px', height: '100%', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ background: '#a5d6a7', borderRadius: '5px', padding: '10px', textAlign: 'right', fontSize: '30px', marginBottom: '15px', color: '#000', wordWrap: 'break-word', minHeight: '40px', display: 'flex', flexDirection:'column', justifyContent: 'flex-end' }}>
+                {result ? <span style={{ fontSize: '14px', color: '#444' }}>({result})</span> : ''}
+                <span>{calc || "0"}</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', flexGrow: 1 }}>
+                <button onClick={clear} style={{...calcBtnStyle, background: '#d32f2f'}}>C</button>
+                <button onClick={() => updateCalc('/')} style={{...calcBtnStyle, background: '#f57c00'}}>/</button>
+                <button onClick={() => updateCalc('*')} style={{...calcBtnStyle, background: '#f57c00'}}>*</button>
+                <button onClick={deleteLast} style={{...calcBtnStyle, background: '#7b1fa2'}}>DEL</button>
+
+                <button onClick={() => updateCalc('7')} style={calcBtnStyle}>7</button>
+                <button onClick={() => updateCalc('8')} style={calcBtnStyle}>8</button>
+                <button onClick={() => updateCalc('9')} style={calcBtnStyle}>9</button>
+                <button onClick={() => updateCalc('-')} style={{...calcBtnStyle, background: '#f57c00'}}>-</button>
+
+                <button onClick={() => updateCalc('4')} style={calcBtnStyle}>4</button>
+                <button onClick={() => updateCalc('5')} style={calcBtnStyle}>5</button>
+                <button onClick={() => updateCalc('6')} style={calcBtnStyle}>6</button>
+                <button onClick={() => updateCalc('+')} style={{...calcBtnStyle, background: '#f57c00'}}>+</button>
+
+                <button onClick={() => updateCalc('1')} style={calcBtnStyle}>1</button>
+                <button onClick={() => updateCalc('2')} style={calcBtnStyle}>2</button>
+                <button onClick={() => updateCalc('3')} style={calcBtnStyle}>3</button>
+                <button onClick={calculate} style={{...calcBtnStyle, gridRow: 'span 2', background: '#1976d2'}}>=</button>
+
+                <button onClick={() => updateCalc('0')} style={{...calcBtnStyle, gridColumn: 'span 2'}}>0</button>
+                <button onClick={() => updateCalc('.')} style={calcBtnStyle}>.</button>
+            </div>
+        </div>
+    );
+};
+
+const RecycleBinContent = () => {
+    const [files, setFiles] = useState([
+        { name: 'old_project_v1.zip', size: '14.2 MB' },
+        { name: 'resume_2022_final_FINAL.pdf', size: '1.1 MB' },
+        { name: 'passwords.txt', size: '4 KB' },
+        { name: 'untitled.png', size: '2.4 MB' },
+        { name: 'homework_folder', size: '140 GB' }
+    ]);
+
+    const emptyBin = () => {
+        playSound('shutdown'); // dramatic sound for emptying bin
+        setFiles([]);
+    };
+
+    return (
+        <div style={{ height: '100%', margin: '-10px', background: '#fff', color: '#000', padding: '10px', overflowY: 'auto', boxSizing: 'border-box' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', borderBottom: '1px solid #ccc', paddingBottom: '10px' }}>
+                <span style={{ fontWeight: 'bold', fontSize: '18px' }}>🗑️ Recycle Bin</span>
+                <button onClick={emptyBin} disabled={files.length === 0} style={{ padding: '8px 15px', cursor: files.length > 0 ? 'pointer' : 'not-allowed', background: files.length > 0 ? '#d32f2f' : '#ccc', color: '#fff', border: 'none', borderRadius: '4px' }}>
+                    Empty Bin
+                </button>
+            </div>
+            
+            {files.length === 0 ? (
+                <div style={{ textAlign: 'center', marginTop: '60px', color: '#666' }}>
+                    <div style={{ fontSize: '50px', marginBottom: '10px' }}>✨</div>
+                    <div style={{ fontSize: '18px' }}>The recycle bin is completely empty.</div>
+                    <div style={{ fontSize: '12px', marginTop: '10px', fontStyle: 'italic' }}>Your OS feels much lighter now!</div>
+                </div>
+            ) : (
+                <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
+                    <thead>
+                        <tr style={{ borderBottom: '2px solid #ddd', background: '#f5f5f5' }}>
+                            <th style={{ padding: '8px' }}>Name</th>
+                            <th style={{ padding: '8px' }}>Size</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {files.map((f, i) => (
+                            <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
+                                <td style={{ padding: '10px 8px' }}>📄 {f.name}</td>
+                                <td style={{ padding: '10px 8px', color: '#666' }}>{f.size}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            )}
         </div>
     );
 };
