@@ -79,6 +79,119 @@ const getFileIcon = (name) => {
   return map[ext] || '📄';
 };
 
+const THEMES = {
+  default: {
+    id: 'default', name: 'Default', emoji: '🌌', desc: 'Dark cosmic blue',
+    desktop: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)',
+    titlebarBg: '#0078d4', titlebarSolid: '#0078d4', titlebarColor: '#fff',
+    windowBg: 'rgba(10,12,35,0.96)', windowBorder: '#3a4a8a', windowShadow: '0 8px 32px rgba(0,0,0,0.6)', windowRadius: '4px',
+    taskbarBg: 'rgba(0,0,0,0.85)', taskbarBorder: '#333', taskbarColor: '#fff',
+    startBg: '#0078d4', startColor: '#fff',
+    menuBg: '#111827', menuColor: '#fff', menuHover: 'rgba(255,255,255,0.1)',
+    appBtnBg: 'rgba(255,255,255,0.12)', appBtnActive: '#0078d4',
+    font: "'Courier New', monospace",
+  },
+  bw: {
+    id: 'bw', name: 'B & W', emoji: '⬛', desc: 'Pure monochrome',
+    desktop: '#0d0d0d',
+    titlebarBg: '#2a2a2a', titlebarSolid: '#2a2a2a', titlebarColor: '#fff',
+    windowBg: '#111', windowBorder: '#444', windowShadow: '0 4px 20px rgba(0,0,0,0.9)', windowRadius: '2px',
+    taskbarBg: '#000', taskbarBorder: '#333', taskbarColor: '#fff',
+    startBg: '#333', startColor: '#fff',
+    menuBg: '#0a0a0a', menuColor: '#fff', menuHover: 'rgba(255,255,255,0.1)',
+    appBtnBg: '#252525', appBtnActive: '#555',
+    font: "'Arial', sans-serif",
+  },
+  macos: {
+    id: 'macos', name: 'macOS', emoji: '🍎', desc: 'Aqua light',
+    desktop: 'linear-gradient(180deg, #7ec8e3 0%, #5ba4d4 45%, #3d7fcf 100%)',
+    titlebarBg: 'linear-gradient(to bottom, #f0f0f0, #d4d4d4)', titlebarSolid: '#d4d4d4', titlebarColor: '#333',
+    windowBg: 'rgba(252,252,252,0.98)', windowBorder: 'rgba(0,0,0,0.18)', windowShadow: '0 22px 64px rgba(0,0,0,0.28)', windowRadius: '10px',
+    taskbarBg: 'rgba(220,220,220,0.88)', taskbarBorder: 'rgba(0,0,0,0.1)', taskbarColor: '#222',
+    startBg: 'rgba(255,255,255,0.75)', startColor: '#333',
+    menuBg: 'rgba(245,245,245,0.97)', menuColor: '#222', menuHover: 'rgba(0,122,255,0.14)',
+    appBtnBg: 'rgba(0,0,0,0.06)', appBtnActive: 'rgba(0,122,255,0.22)',
+    font: "-apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif",
+  },
+  ubuntu: {
+    id: 'ubuntu', name: 'Ubuntu', emoji: '🐧', desc: 'GNOME dark',
+    desktop: 'linear-gradient(135deg, #2c001e 0%, #4e1c3c 100%)',
+    titlebarBg: '#3d3d3d', titlebarSolid: '#3d3d3d', titlebarColor: '#fff',
+    windowBg: '#2d2d2d', windowBorder: '#4e0035', windowShadow: '0 8px 32px rgba(0,0,0,0.7)', windowRadius: '6px',
+    taskbarBg: '#2c001e', taskbarBorder: '#4e0035', taskbarColor: '#fff',
+    startBg: '#e95420', startColor: '#fff',
+    menuBg: '#1e0016', menuColor: '#fff', menuHover: 'rgba(233,84,32,0.28)',
+    appBtnBg: 'rgba(255,255,255,0.08)', appBtnActive: '#e95420',
+    font: "'Ubuntu', 'Cantarell', 'Noto Sans', sans-serif",
+  },
+  kali: {
+    id: 'kali', name: 'Kali Linux', emoji: '💀', desc: 'Hacker dark',
+    desktop: '#050505',
+    titlebarBg: '#00b4d8', titlebarSolid: '#00b4d8', titlebarColor: '#000',
+    windowBg: '#0a0a0a', windowBorder: '#00b4d822', windowShadow: '0 0 30px rgba(0,180,216,0.15)', windowRadius: '2px',
+    taskbarBg: '#0a0a0a', taskbarBorder: '#00b4d822', taskbarColor: '#00b4d8',
+    startBg: '#00b4d8', startColor: '#000',
+    menuBg: '#0a0a0a', menuColor: '#00b4d8', menuHover: 'rgba(0,180,216,0.12)',
+    appBtnBg: 'rgba(0,180,216,0.07)', appBtnActive: 'rgba(0,180,216,0.22)',
+    font: "'Fira Code', 'JetBrains Mono', 'Courier New', monospace",
+  },
+  winxp: {
+    id: 'winxp', name: 'Windows XP', emoji: '🪟', desc: 'Luna classic',
+    desktop: 'linear-gradient(180deg, #1877f2 0%, #1877f2 38%, #5a9e2f 38%, #3d7a1e 100%)',
+    titlebarBg: 'linear-gradient(to bottom, #2b88d8 0%, #1660b8 40%, #1255aa 100%)', titlebarSolid: '#1660b8', titlebarColor: '#fff',
+    windowBg: '#fff', windowBorder: '#0d5cab', windowShadow: '2px 4px 10px rgba(0,0,0,0.4)', windowRadius: '4px',
+    taskbarBg: 'linear-gradient(to bottom, #245edc, #1a49c8)', taskbarBorder: '#0a2d8a', taskbarColor: '#fff',
+    startBg: 'linear-gradient(to bottom, #58d558, #2da82d)', startColor: '#fff',
+    menuBg: '#ece9d8', menuColor: '#000', menuHover: '#316ac5',
+    appBtnBg: 'rgba(255,255,255,0.14)', appBtnActive: 'rgba(255,255,255,0.35)',
+    font: "'Tahoma', 'Verdana', sans-serif",
+  },
+  win11: {
+    id: 'win11', name: 'Windows 11', emoji: '🔲', desc: 'Fluent Design',
+    desktop: 'linear-gradient(135deg, #003d82 0%, #0067c0 60%, #0078d4 100%)',
+    titlebarBg: '#202020', titlebarSolid: '#202020', titlebarColor: '#e0e0e0',
+    windowBg: 'rgba(28,28,28,0.92)', windowBorder: 'rgba(255,255,255,0.09)', windowShadow: '0 8px 40px rgba(0,0,0,0.7)', windowRadius: '8px',
+    taskbarBg: 'rgba(20,20,20,0.85)', taskbarBorder: 'rgba(255,255,255,0.06)', taskbarColor: '#e0e0e0',
+    startBg: 'rgba(255,255,255,0.1)', startColor: '#e0e0e0',
+    menuBg: 'rgba(28,28,28,0.96)', menuColor: '#e0e0e0', menuHover: 'rgba(255,255,255,0.07)',
+    appBtnBg: 'rgba(255,255,255,0.06)', appBtnActive: 'rgba(255,255,255,0.14)',
+    font: "'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif",
+  },
+  cyberpunk: {
+    id: 'cyberpunk', name: 'Cyberpunk', emoji: '⚡', desc: 'Neon noir',
+    desktop: 'linear-gradient(135deg, #050010 0%, #120025 100%)',
+    titlebarBg: '#ff003c', titlebarSolid: '#ff003c', titlebarColor: '#fff',
+    windowBg: '#0a0018', windowBorder: '#ff003c44', windowShadow: '0 0 30px rgba(255,0,60,0.2), 0 8px 32px rgba(0,0,0,0.8)', windowRadius: '2px',
+    taskbarBg: '#080015', taskbarBorder: '#ff003c33', taskbarColor: '#ff003c',
+    startBg: '#ff003c', startColor: '#fff',
+    menuBg: '#080015', menuColor: '#ff003c', menuHover: 'rgba(255,0,60,0.14)',
+    appBtnBg: 'rgba(255,0,60,0.07)', appBtnActive: 'rgba(255,0,60,0.24)',
+    font: "'Courier New', monospace",
+  },
+  synthwave: {
+    id: 'synthwave', name: 'Synthwave', emoji: '🌆', desc: 'Retro 80s',
+    desktop: 'linear-gradient(180deg, #0d0221 0%, #1a0533 55%, #2b0a3d 100%)',
+    titlebarBg: 'linear-gradient(90deg, #ff71ce, #b967ff)', titlebarSolid: '#b967ff', titlebarColor: '#fff',
+    windowBg: '#160428', windowBorder: '#b967ff33', windowShadow: '0 0 30px rgba(185,103,255,0.25)', windowRadius: '4px',
+    taskbarBg: '#160428', taskbarBorder: '#ff71ce33', taskbarColor: '#ff71ce',
+    startBg: 'linear-gradient(90deg, #ff71ce, #b967ff)', startColor: '#fff',
+    menuBg: '#0d0221', menuColor: '#ff71ce', menuHover: 'rgba(255,113,206,0.14)',
+    appBtnBg: 'rgba(185,103,255,0.1)', appBtnActive: 'rgba(255,113,206,0.28)',
+    font: "'Courier New', monospace",
+  },
+  retro: {
+    id: 'retro', name: 'Retro CRT', emoji: '📺', desc: 'Green phosphor',
+    desktop: '#040804',
+    titlebarBg: '#004400', titlebarSolid: '#004400', titlebarColor: '#00ff00',
+    windowBg: '#020402', windowBorder: '#00ff0030', windowShadow: '0 0 20px rgba(0,255,0,0.12)', windowRadius: '2px',
+    taskbarBg: '#020402', taskbarBorder: '#00ff0020', taskbarColor: '#00cc00',
+    startBg: '#003300', startColor: '#00ff00',
+    menuBg: '#020402', menuColor: '#00ff00', menuHover: 'rgba(0,255,0,0.1)',
+    appBtnBg: 'rgba(0,255,0,0.07)', appBtnActive: 'rgba(0,255,0,0.2)',
+    font: "'Courier New', 'VT323', monospace",
+  },
+};
+
 const ICONS = [
   { id: 'about', label: 'About Me', icon: '👤' },
   { id: 'projects', label: 'Projects', icon: '📁' },
@@ -91,7 +204,8 @@ const ICONS = [
   { id: 'notepad', label: 'Notepad', icon: '📝' },
   { id: 'calculator', label: 'Calculator', icon: '🧮' },
   { id: 'recycle', label: 'Recycle Bin', icon: '🗑️' },
-  { id: 'vault', label: 'Vault', icon: '🔐' }
+  { id: 'vault', label: 'Vault', icon: '🔐' },
+  { id: 'themes', label: 'Themes', icon: '🎨' }
 ];
 
 function App() {
@@ -103,6 +217,8 @@ function App() {
   const [time, setTime] = useState(new Date().toLocaleTimeString());
   const [zIndexCounter, setZIndexCounter] = useState(100);
   const [vfs, setVfs] = useState({ '/': { type: 'dir', children: {} } });
+  const [currentThemeId, setCurrentThemeId] = useState('default');
+  const theme = THEMES[currentThemeId] || THEMES.default;
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -189,8 +305,30 @@ function App() {
       );
   }
 
+  const themeVars = {
+    background: theme.desktop,
+    '--tb-bg': theme.titlebarBg,
+    '--tb-solid': theme.titlebarSolid,
+    '--tb-color': theme.titlebarColor,
+    '--win-bg': theme.windowBg,
+    '--win-border': theme.windowBorder,
+    '--win-shadow': theme.windowShadow,
+    '--win-radius': theme.windowRadius || '4px',
+    '--bar-bg': theme.taskbarBg,
+    '--bar-border': theme.taskbarBorder,
+    '--bar-color': theme.taskbarColor,
+    '--start-bg': theme.startBg,
+    '--start-color': theme.startColor,
+    '--menu-bg': theme.menuBg,
+    '--menu-color': theme.menuColor,
+    '--menu-hover': theme.menuHover,
+    '--btn-bg': theme.appBtnBg,
+    '--btn-active': theme.appBtnActive,
+    '--desk-font': theme.font,
+  };
+
   return (
-    <div className={`desktop ${isShuttingDown ? 'shutting-down' : ''}`} onClick={() => setStartMenuOpen(false)}>
+    <div className={`desktop ${isShuttingDown ? 'shutting-down' : ''}`} style={themeVars} onClick={() => setStartMenuOpen(false)}>
       {/* Desktop Icons - Using flexbox to auto arrange them and override absolute classes */}
       <div style={{ display: 'flex', flexDirection: 'column', flexWrap: 'wrap', height: 'calc(100vh - 60px)', alignContent: 'flex-start', padding: '10px', gap: '15px' }}>
           {ICONS.map((icon) => (
@@ -235,6 +373,7 @@ function App() {
           onFocus={() => focusWindow(win.id)}
           updatePos={updateWindowPos}
           fsProps={win.id === 'terminal' || win.id.startsWith('explorer::') ? { vfs, setVfs } : undefined}
+          themeProps={win.id === 'themes' ? { currentThemeId, setCurrentThemeId, themes: THEMES } : undefined}
         />
       ))}
 
@@ -312,7 +451,7 @@ const WindowTitleBar = ({ title, onClose, onMinimize, onMaximize, onFocus, updat
 };
 
 // Main Window Component
-const Window = ({ id, winState, isActive, onClose, onMinimize, onMaximize, onFocus, updatePos, fsProps }) => {
+const Window = ({ id, winState, isActive, onClose, onMinimize, onMaximize, onFocus, updatePos, fsProps, themeProps }) => {
   const getStyle = () => {
     if (winState.minimized) {
         return { display: 'none' };
@@ -350,7 +489,7 @@ const Window = ({ id, winState, isActive, onClose, onMinimize, onMaximize, onFoc
       />
       <div className="window-content" style={{ height: 'calc(100% - 20px)', boxSizing: 'border-box', overflow: 'hidden', padding: 0 }} onMouseDown={(e) => e.stopPropagation()}>
         <div style={{ padding: '10px', height: '100%', boxSizing: 'border-box', overflowY: 'auto' }}>
-            <WindowContent id={id} fsProps={fsProps} />
+            <WindowContent id={id} fsProps={fsProps} themeProps={themeProps} />
         </div>
       </div>
     </div>
@@ -358,7 +497,7 @@ const Window = ({ id, winState, isActive, onClose, onMinimize, onMaximize, onFoc
 };
 
 // Generic content dispatcher
-const WindowContent = ({ id, fsProps }) => {
+const WindowContent = ({ id, fsProps, themeProps }) => {
   if (id.startsWith('explorer::')) {
     const path = id.slice('explorer::'.length);
     return <FileExplorerContent initialPath={path} fsProps={fsProps} />;
@@ -376,6 +515,7 @@ const WindowContent = ({ id, fsProps }) => {
     case 'calculator': return <CalculatorContent />;
     case 'recycle': return <RecycleBinContent />;
     case 'vault': return <VaultContent />;
+    case 'themes': return <ThemeContent themeProps={themeProps} />;
     default: return <div>Unknown Window</div>;
   }
 };
@@ -1004,6 +1144,75 @@ const hashPassword = async (pwd) => {
   const buf = new TextEncoder().encode(pwd);
   const hash = await crypto.subtle.digest('SHA-256', buf);
   return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+};
+
+const ThemeContent = ({ themeProps }) => {
+  const { currentThemeId, setCurrentThemeId, themes } = themeProps || {};
+  const themeList = Object.values(themes || THEMES);
+
+  return (
+    <div style={{ height: '100%', margin: '-10px', display: 'flex', flexDirection: 'column', background: '#1a1a2e', color: '#fff', fontFamily: 'system-ui, sans-serif' }}>
+      {/* Header */}
+      <div style={{ padding: '14px 18px 10px', borderBottom: '1px solid #2a2a4e', background: '#12122a' }}>
+        <div style={{ fontSize: '18px', fontWeight: 700, marginBottom: '4px' }}>🎨 Desktop Themes</div>
+        <div style={{ fontSize: '12px', color: '#666' }}>Click a theme to apply it instantly</div>
+      </div>
+
+      {/* Theme grid */}
+      <div style={{ flexGrow: 1, overflowY: 'auto', padding: '14px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px', alignContent: 'start' }}>
+        {themeList.map((t) => {
+          const isActive = t.id === currentThemeId;
+          return (
+            <div
+              key={t.id}
+              onClick={() => { playSound('click'); setCurrentThemeId(t.id); }}
+              style={{
+                borderRadius: '10px',
+                overflow: 'hidden',
+                cursor: 'pointer',
+                border: isActive ? '2px solid #6c63ff' : '2px solid #2a2a4e',
+                boxShadow: isActive ? '0 0 16px rgba(108,99,255,0.4)' : 'none',
+                transition: 'all 0.2s',
+                background: '#0f0f1e',
+              }}
+            >
+              {/* Preview strip */}
+              <div style={{ height: '72px', background: t.desktop, position: 'relative', overflow: 'hidden' }}>
+                {/* Mini taskbar */}
+                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '12px', background: t.taskbarBg, borderTop: `1px solid ${t.taskbarBorder}` }} />
+                {/* Mini window */}
+                <div style={{ position: 'absolute', top: '8px', left: '10px', width: '60px', height: '36px', borderRadius: '3px', border: `1px solid ${t.windowBorder}`, background: t.windowBg, overflow: 'hidden', boxShadow: t.windowShadow }}>
+                  <div style={{ height: '8px', background: t.titlebarSolid, display: 'flex', alignItems: 'center', paddingLeft: '3px', gap: '2px' }}>
+                    <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'rgba(255,255,255,0.5)' }} />
+                    <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'rgba(255,255,255,0.5)' }} />
+                  </div>
+                </div>
+                {/* Active badge */}
+                {isActive && (
+                  <div style={{ position: 'absolute', top: '6px', right: '8px', background: '#6c63ff', color: '#fff', fontSize: '9px', padding: '2px 6px', borderRadius: '10px', fontWeight: 700 }}>
+                    ACTIVE
+                  </div>
+                )}
+              </div>
+              {/* Info */}
+              <div style={{ padding: '9px 11px 10px' }}>
+                <div style={{ fontSize: '14px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>{t.emoji}</span>
+                  <span style={{ color: isActive ? '#a89dff' : '#e0e0ff' }}>{t.name}</span>
+                </div>
+                <div style={{ fontSize: '11px', color: '#555', marginTop: '3px' }}>{t.desc}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Footer */}
+      <div style={{ padding: '8px 18px', background: '#12122a', borderTop: '1px solid #2a2a4e', fontSize: '11px', color: '#444' }}>
+        {themeList.length} themes available · current: {themes?.[currentThemeId]?.name}
+      </div>
+    </div>
+  );
 };
 
 const VaultContent = () => {

@@ -1,25 +1,24 @@
 body {
     margin: 0;
     padding: 0;
-    font-family: 'Courier New', monospace;
-    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-    color: #00ff00;
     overflow: hidden;
     height: 100vh;
     position: relative;
-    transition: opacity 1s ease-out;
 }
 
-body.shutting-down {
-    opacity: 0;
-}
-
-/* Desktop background */
+/* Desktop - CSS variables set by inline style from JS theme object */
 .desktop {
     width: 100vw;
     height: 100vh;
     position: relative;
-    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23ffffff" width="100" height="100" opacity="0.05"/><circle fill="%23ffffff" cx="20" cy="20" r="1" opacity="0.1"/><circle fill="%23ffffff" cx="80" cy="80" r="1" opacity="0.1"/><circle fill="%23ffffff" cx="50" cy="50" r="0.5" opacity="0.05"/></svg>');
+    font-family: var(--desk-font, 'Courier New', monospace);
+    color: var(--desk-color, #fff);
+    transition: background 0.4s ease;
+}
+
+.desktop.shutting-down {
+    opacity: 0;
+    transition: opacity 1s ease-out;
 }
 
 /* Taskbar */
@@ -28,136 +27,120 @@ body.shutting-down {
     bottom: 0;
     width: 100%;
     height: 40px;
-    background: rgba(0, 0, 0, 0.8);
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 10px;
     box-sizing: border-box;
-    border-top: 1px solid #333;
     z-index: 1000;
+    background: var(--bar-bg, rgba(0,0,0,0.85));
+    border-top: 1px solid var(--bar-border, #333);
+    color: var(--bar-color, #fff);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 .start-button {
-    background: #0078d4;
-    color: #fff;
-    padding: 5px 10px;
-    border: 1px solid #333;
+    padding: 5px 12px;
+    border: 1px solid var(--bar-border, #333);
     font-size: 12px;
     cursor: pointer;
-    border-radius: 3px;
+    border-radius: 4px;
+    font-family: inherit;
+    background: var(--start-bg, #0078d4);
+    color: var(--start-color, #fff);
+    transition: opacity 0.15s;
 }
+.start-button:hover { opacity: 0.85; }
 
 .start-menu {
     position: absolute;
     bottom: 40px;
     left: 10px;
-    background: #000;
-    color: #fff;
-    padding: 10px;
-    border: 1px solid #333;
+    padding: 8px;
+    border: 1px solid var(--bar-border, #333);
     font-size: 12px;
     display: none;
-    min-width: 150px;
+    min-width: 160px;
     z-index: 1001;
+    background: var(--menu-bg, #111);
+    color: var(--menu-color, #fff);
+    border-radius: 6px 6px 0 0;
+    box-shadow: 0 -8px 24px rgba(0,0,0,0.4);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
+.start-menu.open { display: block; }
+.start-menu ul { list-style: none; padding: 0; margin: 0; }
+.start-menu li { padding: 6px 8px; cursor: pointer; border-radius: 3px; }
+.start-menu li:hover { background: var(--menu-hover, rgba(255,255,255,0.1)); }
 
-.start-menu.open {
-    display: block;
-}
-
-.start-menu ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.start-menu li {
-    padding: 5px;
-    cursor: pointer;
-}
-
-.start-menu li:hover {
-    background: rgba(255, 255, 255, 0.1);
-}
-
-.taskbar-apps {
-    display: flex;
-    gap: 5px;
-}
+.taskbar-apps { display: flex; gap: 5px; overflow: hidden; }
 
 .app-button {
-    background: rgba(255, 255, 255, 0.2);
-    color: #fff;
-    padding: 5px 8px;
-    border: 1px solid #333;
-    font-size: 10px;
+    padding: 4px 10px;
+    border: 1px solid var(--bar-border, #333);
+    font-size: 11px;
     cursor: pointer;
-    border-radius: 3px;
+    border-radius: 4px;
+    white-space: nowrap;
+    font-family: inherit;
+    background: var(--btn-bg, rgba(255,255,255,0.1));
+    color: var(--bar-color, #fff);
+    transition: background 0.15s;
 }
-
 .app-button.active {
-    background: #0078d4;
+    background: var(--btn-active, #0078d4);
 }
 
 .clock {
-    color: #fff;
     font-size: 12px;
+    white-space: nowrap;
+    color: var(--bar-color, #fff);
 }
 
 /* Windows */
 .window {
     position: absolute;
-    background: rgba(0, 0, 0, 0.9);
-    border: 2px solid #333;
-    border-top: 20px solid #0078d4;
-    min-width: 300px;
-    min-height: 200px;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    min-width: 320px;
+    min-height: 220px;
+    box-shadow: var(--win-shadow, 0 8px 32px rgba(0,0,0,0.5));
     display: none;
     z-index: 10;
     resize: both;
     overflow: auto;
+    border-radius: var(--win-radius, 4px);
+    border: 2px solid var(--win-border, #333);
+    border-top: 22px solid var(--tb-solid, #0078d4);
+    background: var(--win-bg, rgba(0,0,0,0.92));
 }
-
-.window.active {
-    display: block;
-    z-index: 100;
-}
-
-.window.minimized {
-    height: 20px !important;
-    min-height: 20px !important;
-    resize: none;
-}
+.window.active { display: block; }
 
 .window-titlebar {
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 20px;
-    background: #0078d4;
-    color: #fff;
+    top: -22px;
+    left: -2px;
+    right: -2px;
+    height: 22px;
     font-size: 12px;
-    padding: 2px 5px;
+    padding: 2px 6px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     cursor: move;
     user-select: none;
+    border-radius: var(--win-radius, 4px) var(--win-radius, 4px) 0 0;
+    background: var(--tb-bg, #0078d4);
+    color: var(--tb-color, #fff);
 }
 
-.window-titlebar-controls {
-    display: flex;
-    gap: 2px;
-}
+.window-titlebar-controls { display: flex; gap: 4px; }
 
 .control-btn {
     width: 16px;
     height: 16px;
-    background: #fff;
-    color: #000;
+    background: rgba(255,255,255,0.8);
+    color: #222;
     border: none;
     cursor: pointer;
     font-size: 10px;
@@ -165,45 +148,38 @@ body.shutting-down {
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 2px;
+    border-radius: 50%;
+    transition: background 0.15s;
 }
-
-.control-btn:hover {
-    background: #ddd;
-}
+.control-btn:hover { background: #fff; }
+.close-btn:hover { background: #ff5f57 !important; color: #fff; }
 
 .window-content {
     padding: 10px;
-    margin-top: 20px;
+    margin-top: 0;
     overflow-y: auto;
-    height: calc(100% - 20px);
+    height: calc(100% - 22px);
+    box-sizing: border-box;
+    color: var(--content-color, inherit);
+    background: var(--content-bg, transparent);
 }
 
 /* Desktop icons */
 .icon {
     position: absolute;
     text-align: center;
-    color: #fff;
     font-size: 12px;
     cursor: pointer;
-    padding: 5px;
-    border-radius: 5px;
-    transition: background 0.2s;
+    padding: 6px;
+    border-radius: 6px;
+    transition: background 0.15s;
     user-select: none;
+    color: var(--icon-color, #fff);
 }
+.icon:hover { background: var(--icon-hover, rgba(255,255,255,0.15)); }
+.icon img { width: 48px; height: 48px; display: block; margin: 0 auto 4px; }
 
-.icon:hover {
-    background: rgba(255, 255, 255, 0.1);
-}
-
-.icon img {
-    width: 48px;
-    height: 48px;
-    display: block;
-    margin: 0 auto 5px;
-}
-
-/* Position icons */
+/* Position icons (legacy) */
 .icon-about { top: 50px; left: 50px; }
 .icon-projects { top: 50px; left: 200px; }
 .icon-skills { top: 50px; left: 350px; }
@@ -212,14 +188,14 @@ body.shutting-down {
 .icon-camera { top: 150px; left: 350px; }
 .icon-contact { top: 250px; left: 50px; }
 
-/* Paint specific */
+/* Paint */
 #paint-canvas {
-    border: 1px solid #fff;
+    border: 1px solid #ccc;
     background: #fff;
     cursor: crosshair;
 }
 
-/* Games specific */
+/* Games */
 .tic-tac-toe {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -228,7 +204,6 @@ body.shutting-down {
     height: 150px;
     margin: 10px auto;
 }
-
 .tic-cell {
     background: #ddd;
     border: 1px solid #999;
@@ -239,14 +214,7 @@ body.shutting-down {
     cursor: pointer;
     user-select: none;
 }
+.tic-cell:hover { background: #ccc; }
 
-.tic-cell:hover {
-    background: #ccc;
-}
-
-/* Camera specific */
-#camera-video {
-    width: 100%;
-    height: 200px;
-    background: #000;
-}
+/* Camera */
+#camera-video { width: 100%; height: 200px; background: #000; }
