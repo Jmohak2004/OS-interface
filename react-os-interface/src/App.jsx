@@ -225,33 +225,30 @@ function App() {
 
 // Window Component Header Drag handling
 const WindowTitleBar = ({ title, onClose, onMinimize, onMaximize, onFocus, updatePos, winState }) => {
-    const isDragging = useRef(false);
-    const dragOffset = useRef({ x: 0, y: 0 });
-  
+    
     const handleMouseDown = (e) => {
-      isDragging.current = true;
       onFocus();
-      dragOffset.current = {
-         x: e.clientX - winState.pos.x,
-         y: e.clientY - winState.pos.y
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const initialWindowX = winState.pos.x;
+      const initialWindowY = winState.pos.y;
+
+      const handleMouseMove = (moveEvent) => {
+        if (!winState.maximized) {
+            updatePos(winState.id, {
+                x: initialWindowX + (moveEvent.clientX - startX),
+                y: initialWindowY + (moveEvent.clientY - startY)
+            });
+        }
       };
+
+      const handleMouseUp = () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
-    };
-  
-    const handleMouseMove = (e) => {
-      if (isDragging.current && !winState.maximized) {
-        updatePos(winState.id, {
-            x: e.clientX - dragOffset.current.x,
-            y: e.clientY - dragOffset.current.y
-        });
-      }
-    };
-  
-    const handleMouseUp = () => {
-      isDragging.current = false;
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
     };
 
     return (
