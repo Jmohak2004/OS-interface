@@ -1,6 +1,67 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 
+// Sound Engine using Web Audio API
+const playSound = (type) => {
+    try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const t = ctx.currentTime;
+        
+        const playTone = (f, oscType, dur, start, vol=0.1) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = oscType;
+            osc.frequency.setValueAtTime(f, start);
+            gain.gain.setValueAtTime(vol, start);
+            gain.gain.exponentialRampToValueAtTime(0.01, start + dur);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(start);
+            osc.stop(start + dur);
+        };
+
+        if (type === 'click') {
+            playTone(800, 'sine', 0.05, t, 0.05);
+        } else if (type === 'startup') {
+            playTone(440, 'triangle', 0.5, t);
+            playTone(554, 'triangle', 0.5, t + 0.1);
+            playTone(659, 'triangle', 0.5, t + 0.2);
+            playTone(880, 'triangle', 1.0, t + 0.3);
+        } else if (type === 'shutdown') {
+            playTone(880, 'sawtooth', 0.3, t);
+            playTone(659, 'sawtooth', 0.3, t + 0.15);
+            playTone(554, 'sawtooth', 0.3, t + 0.3);
+            playTone(440, 'sawtooth', 0.8, t + 0.45);
+        } else if (type === 'open') {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(300, t);
+            osc.frequency.exponentialRampToValueAtTime(600, t + 0.1);
+            gain.gain.setValueAtTime(0.05, t);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(t);
+            osc.stop(t + 0.1);
+        } else if (type === 'close') {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(600, t);
+            osc.frequency.exponentialRampToValueAtTime(300, t + 0.1);
+            gain.gain.setValueAtTime(0.05, t);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(t);
+            osc.stop(t + 0.1);
+        }
+    } catch(e) { console.warn("Audio not supported or blocked"); }
+};
+
 const ICONS = [
   { id: 'about', label: 'About Me', icon: '👤' },
   { id: 'projects', label: 'Projects', icon: '📁' },
@@ -12,6 +73,8 @@ const ICONS = [
 ];
 
 function App() {
+  const [isPoweredOn, setIsPoweredOn] = useState(false);
+  const [isShuttingDown, setIsShuttingDown] = useState(false);
   const [openWindows, setOpenWindows] = useState([]);
   const [activeWindow, setActiveWindow] = useState(null);
   const [startMenuOpen, setStartMenuOpen] = useState(false);
@@ -25,9 +88,28 @@ function App() {
     return () => clearInterval(timer);
   }, []);
 
+  const handlePowerOn = () => {
+    playSound('startup');
+    setIsPoweredOn(true);
+    setIsShuttingDown(false);
+    setOpenWindows([]);
+  };
+
+  const handleShutDown = () => {
+    playSound('shutdown');
+    setStartMenuOpen(false);
+    setIsShuttingDown(true);
+    setTimeout(() => {
+        setIsPoweredOn(false);
+    }, 1500); // Wait for animation and sound
+  };
+
   const handleOpenWindow = (id) => {
     if (!openWindows.find(w => w.id === id)) {
+      playSound('open');
       setOpenWindows([...openWindows, { id, minimized: false, maximized: false, zIndex: zIndexCounter, pos: { x: 50 + (openWindows.length * 20), y: 50 + (openWindows.length * 20) } }]);
+    } else {
+      playSound('click');
     }
     setActiveWindow(id);
     setZIndexCounter(prev => prev + 1);
@@ -37,20 +119,24 @@ function App() {
   };
 
   const handleCloseWindow = (id) => {
+    playSound('close');
     setOpenWindows(openWindows.filter(w => w.id !== id));
     if (activeWindow === id) setActiveWindow(null);
   };
 
   const handleMinimizeWindow = (id) => {
+    playSound('click');
     setOpenWindows(openWindows.map(w => w.id === id ? { ...w, minimized: true } : w));
     setActiveWindow(null);
   };
 
   const handleMaximizeWindow = (id) => {
+    playSound('click');
     setOpenWindows(openWindows.map(w => w.id === id ? { ...w, maximized: !w.maximized } : w));
   };
 
   const focusWindow = (id) => {
+    playSound('click');
     setActiveWindow(id);
     setZIndexCounter(prev => prev + 1);
     setOpenWindows(prev => prev.map(w => w.id === id ? { ...w, minimized: false, zIndex: zIndexCounter } : w));
@@ -60,13 +146,27 @@ function App() {
       setOpenWindows(prev => prev.map(w => w.id === id ? { ...w, pos } : w));
   };
 
+  if (!isPoweredOn) {
+      return (
+          <div style={{ width: '100vw', height: '100vh', backgroundColor: '#000', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <button 
+                  onClick={handlePowerOn}
+                  style={{ padding: '20px 40px', fontSize: '24px', cursor: 'pointer', background: '#333', color: '#fff', border: '2px solid #555', borderRadius: '10px' }}
+              >
+                  Power On
+              </button>
+          </div>
+      );
+  }
+
   return (
-    <div className="desktop">
+    <div className={`desktop ${isShuttingDown ? 'shutting-down' : ''}`}>
       {/* Desktop Icons */}
       {ICONS.map((icon, index) => (
         <div
           key={icon.id}
           className={`icon icon-${icon.id}`}
+          onClick={() => playSound('click')}
           onDoubleClick={() => handleOpenWindow(icon.id)}
         >
           <img src={`data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'><rect width='48' height='48' fill='%23fff' opacity='0.2'/><text x='24' y='28' text-anchor='middle' fill='%23fff' font-size='12'>${icon.icon}</text></svg>`} alt={icon.label} />
@@ -90,16 +190,19 @@ function App() {
       ))}
 
       {/* Taskbar */}
-      <div className="taskbar">
-        <button className="start-button" onClick={() => setStartMenuOpen(!startMenuOpen)}>
+      <div className="taskbar" onClick={() => { if(!startMenuOpen) playSound('click'); }}>
+        <button className="start-button" onClick={(e) => { e.stopPropagation(); playSound('click'); setStartMenuOpen(!startMenuOpen); }}>
           Start
         </button>
         {startMenuOpen && (
           <div className="start-menu open">
             <ul>
               {ICONS.map(icon => (
-                <li key={icon.id} onClick={() => handleOpenWindow(icon.id)}>{icon.label}</li>
+                <li key={icon.id} onClick={(e) => { e.stopPropagation(); setStartMenuOpen(false); handleOpenWindow(icon.id); }}>{icon.label}</li>
               ))}
+              <li style={{borderTop: '1px solid #333', marginTop: '5px', paddingTop: '5px'}} onClick={(e) => { e.stopPropagation(); handleShutDown(); }}>
+                  Shut Down...
+              </li>
             </ul>
           </div>
         )}
@@ -108,7 +211,7 @@ function App() {
              <div
                key={`taskbar-${win.id}`}
                className={`app-button ${activeWindow === win.id ? 'active' : ''}`}
-               onClick={() => focusWindow(win.id)}
+               onClick={(e) => { e.stopPropagation(); focusWindow(win.id); }}
              >
                {win.id.charAt(0).toUpperCase() + win.id.slice(1)}
              </div>
@@ -198,7 +301,7 @@ const Window = ({ id, winState, isActive, onClose, onMinimize, onMaximize, onFoc
         updatePos={updatePos}
         winState={winState}
       />
-      <div className="window-content">
+      <div className="window-content" onMouseDown={(e) => e.stopPropagation()}>
         <WindowContent id={id} />
       </div>
     </div>
@@ -277,6 +380,7 @@ const PaintContent = () => {
     const lastPos = useRef({ x: 0, y: 0 });
 
     const handleMouseDown = (e) => {
+        playSound('click');
         isDrawing.current = true;
         lastPos.current = { x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY };
     };
@@ -298,6 +402,7 @@ const PaintContent = () => {
     };
 
     const clearCanvas = () => {
+        playSound('click');
         const canvas = canvasRef.current;
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -318,7 +423,7 @@ const PaintContent = () => {
             />
             <br />
             <button onClick={clearCanvas}>Clear</button>
-            <label>Color: <input type="color" value={color} onChange={(e) => setColor(e.target.value)} /></label>
+            <label>Color: <input type="color" value={color} onChange={(e) => { playSound('click'); setColor(e.target.value); }} /></label>
         </div>
     );
 };
@@ -340,6 +445,7 @@ const GamesContent = () => {
     };
 
     const handleClick = (i) => {
+        playSound('click');
         if (board[i] || winner) return;
         const newBoard = [...board];
         newBoard[i] = player;
@@ -354,6 +460,7 @@ const GamesContent = () => {
     };
 
     const resetGame = () => {
+        playSound('click');
         setBoard(Array(9).fill(null));
         setPlayer('X');
         setWinner(null);
@@ -382,6 +489,7 @@ const CameraContent = () => {
     const [stream, setStream] = useState(null);
     
     const startCamera = async () => {
+        playSound('click');
         try {
             const s = await navigator.mediaDevices.getUserMedia({ video: true });
             setStream(s);
@@ -394,6 +502,7 @@ const CameraContent = () => {
     };
 
     const stopCamera = () => {
+        playSound('click');
         if (stream) {
             stream.getTracks().forEach(track => track.stop());
             setStream(null);
@@ -404,7 +513,11 @@ const CameraContent = () => {
     };
 
     useEffect(() => {
-        return () => stopCamera();
+        return () => {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+        };
     }, [stream]);
 
     return (
