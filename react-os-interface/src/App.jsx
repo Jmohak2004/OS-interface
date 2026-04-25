@@ -62,6 +62,23 @@ const playSound = (type) => {
     } catch(e) { console.warn("Audio not supported or blocked"); }
 };
 
+// Virtual file system helpers
+const getVfsNode = (fs, path) => {
+  const parts = path === '/' ? [] : path.split('/').filter(Boolean);
+  let node = fs['/'];
+  for (const part of parts) {
+    if (!node || !node.children || !node.children[part]) return null;
+    node = node.children[part];
+  }
+  return node;
+};
+
+const getFileIcon = (name) => {
+  const ext = name.split('.').pop().toLowerCase();
+  const map = { txt: '📝', js: '📜', jsx: '📜', ts: '📜', tsx: '📜', png: '🖼️', jpg: '🖼️', jpeg: '🖼️', gif: '🖼️', pdf: '📕', html: '🌐', css: '🎨', json: '📋', md: '📋' };
+  return map[ext] || '📄';
+};
+
 const ICONS = [
   { id: 'about', label: 'About Me', icon: '👤' },
   { id: 'projects', label: 'Projects', icon: '📁' },
@@ -84,6 +101,7 @@ function App() {
   const [startMenuOpen, setStartMenuOpen] = useState(false);
   const [time, setTime] = useState(new Date().toLocaleTimeString());
   const [zIndexCounter, setZIndexCounter] = useState(100);
+  const [vfs, setVfs] = useState({ '/': { type: 'dir', children: {} } });
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -150,6 +168,13 @@ function App() {
       setOpenWindows(prev => prev.map(w => w.id === id ? { ...w, pos } : w));
   };
 
+  const handleOpenVfsItem = (name, node) => {
+    if (node.type === 'dir') {
+      const winId = `explorer::/${name}`;
+      handleOpenWindow(winId);
+    }
+  };
+
   if (!isPoweredOn) {
       return (
           <div style={{ width: '100vw', height: '100vh', backgroundColor: '#000', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -179,6 +204,21 @@ function App() {
               <div style={{ whiteSpace: 'nowrap' }}>{icon.label}</div>
             </div>
           ))}
+          {Object.entries(vfs['/'].children).map(([name, node]) => {
+            const emoji = node.type === 'dir' ? '📂' : getFileIcon(name);
+            return (
+              <div
+                key={`vfs-${name}`}
+                className="icon"
+                style={{ position: 'relative', width: '80px', top: 'auto', left: 'auto' }}
+                onClick={(e) => { e.stopPropagation(); playSound('click'); }}
+                onDoubleClick={(e) => { e.stopPropagation(); handleOpenVfsItem(name, node); }}
+              >
+                <div style={{ fontSize: '32px', lineHeight: 1, marginBottom: '4px', textAlign: 'center' }}>{emoji}</div>
+                <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '78px', fontSize: '11px', textAlign: 'center' }}>{name}</div>
+              </div>
+            );
+          })}
       </div>
 
       {/* Windows */}
@@ -193,6 +233,7 @@ function App() {
           onMaximize={() => handleMaximizeWindow(win.id)}
           onFocus={() => focusWindow(win.id)}
           updatePos={updateWindowPos}
+          fsProps={win.id === 'terminal' || win.id.startsWith('explorer::') ? { vfs, setVfs } : undefined}
         />
       ))}
 
@@ -220,7 +261,7 @@ function App() {
                className={`app-button ${activeWindow === win.id ? 'active' : ''}`}
                onClick={(e) => { e.stopPropagation(); focusWindow(win.id); }}
              >
-               {ICONS.find(i => i.id === win.id)?.icon} {win.id.charAt(0).toUpperCase() + win.id.slice(1)}
+               {win.id.startsWith('explorer::') ? '📂' : ICONS.find(i => i.id === win.id)?.icon} {win.id.startsWith('explorer::') ? win.id.split('/').pop() : win.id.charAt(0).toUpperCase() + win.id.slice(1)}
              </div>
           ))}
         </div>
@@ -270,7 +311,7 @@ const WindowTitleBar = ({ title, onClose, onMinimize, onMaximize, onFocus, updat
 };
 
 // Main Window Component
-const Window = ({ id, winState, isActive, onClose, onMinimize, onMaximize, onFocus, updatePos }) => {
+const Window = ({ id, winState, isActive, onClose, onMinimize, onMaximize, onFocus, updatePos, fsProps }) => {
   const getStyle = () => {
     if (winState.minimized) {
         return { display: 'none' };
@@ -287,7 +328,9 @@ const Window = ({ id, winState, isActive, onClose, onMinimize, onMaximize, onFoc
     };
   };
 
-  const title = id.charAt(0).toUpperCase() + id.slice(1);
+  const title = id.startsWith('explorer::')
+    ? `📂 ${id.split('/').pop()}`
+    : id.charAt(0).toUpperCase() + id.slice(1);
 
   return (
     <div
@@ -306,7 +349,7 @@ const Window = ({ id, winState, isActive, onClose, onMinimize, onMaximize, onFoc
       />
       <div className="window-content" style={{ height: 'calc(100% - 20px)', boxSizing: 'border-box', overflow: 'hidden', padding: 0 }} onMouseDown={(e) => e.stopPropagation()}>
         <div style={{ padding: '10px', height: '100%', boxSizing: 'border-box', overflowY: 'auto' }}>
-            <WindowContent id={id} />
+            <WindowContent id={id} fsProps={fsProps} />
         </div>
       </div>
     </div>
@@ -314,7 +357,11 @@ const Window = ({ id, winState, isActive, onClose, onMinimize, onMaximize, onFoc
 };
 
 // Generic content dispatcher
-const WindowContent = ({ id }) => {
+const WindowContent = ({ id, fsProps }) => {
+  if (id.startsWith('explorer::')) {
+    const path = id.slice('explorer::'.length);
+    return <FileExplorerContent initialPath={path} fsProps={fsProps} />;
+  }
   switch (id) {
     case 'about': return <AboutContent />;
     case 'projects': return <ProjectsContent />;
@@ -323,7 +370,7 @@ const WindowContent = ({ id }) => {
     case 'paint': return <PaintContent />;
     case 'games': return <GamesContent />;
     case 'camera': return <CameraContent />;
-    case 'terminal': return <TerminalContent />;
+    case 'terminal': return <TerminalContent fsProps={fsProps} />;
     case 'notepad': return <NotepadContent />;
     case 'calculator': return <CalculatorContent />;
     case 'recycle': return <RecycleBinContent />;
@@ -544,55 +591,236 @@ const CameraContent = () => {
 };
 
 
+/* --- FILE EXPLORER --- */
+
+const explorerItemStyle = {
+  width: '88px', display: 'flex', flexDirection: 'column', alignItems: 'center',
+  padding: '8px 4px', cursor: 'pointer', borderRadius: '6px', border: '2px solid transparent',
+  userSelect: 'none',
+};
+
+const FileExplorerContent = ({ initialPath, fsProps }) => {
+  const { vfs } = fsProps || {};
+  const [currentPath, setCurrentPath] = useState(initialPath || '/');
+  const [selected, setSelected] = useState(null);
+
+  const node = vfs ? getVfsNode(vfs, currentPath) : null;
+  const items = node?.children ? Object.entries(node.children) : [];
+  const breadcrumbs = currentPath === '/' ? [] : currentPath.split('/').filter(Boolean);
+
+  const navigate = (name) => {
+    setSelected(null);
+    setCurrentPath(currentPath === '/' ? '/' + name : currentPath + '/' + name);
+  };
+
+  const goTo = (idx) => {
+    setSelected(null);
+    if (idx < 0) { setCurrentPath('/'); return; }
+    setCurrentPath('/' + breadcrumbs.slice(0, idx + 1).join('/'));
+  };
+
+  const goUp = () => {
+    if (currentPath === '/') return;
+    const p = currentPath.split('/').filter(Boolean);
+    p.pop();
+    setCurrentPath(p.length === 0 ? '/' : '/' + p.join('/'));
+  };
+
+  return (
+    <div style={{ height: '100%', margin: '-10px', display: 'flex', flexDirection: 'column', background: '#fff', color: '#222', fontFamily: 'Arial, sans-serif' }}>
+      {/* Toolbar */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 10px', background: '#f0f0f0', borderBottom: '1px solid #ccc' }}>
+        <button onClick={goUp} disabled={currentPath === '/'} style={{ padding: '3px 10px', cursor: currentPath === '/' ? 'default' : 'pointer', fontSize: '13px', background: '#e0e0e0', border: '1px solid #bbb', borderRadius: '3px' }}>↑ Up</button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '2px', fontSize: '13px', flexGrow: 1 }}>
+          <span style={{ cursor: 'pointer', color: '#0066cc', fontWeight: 'bold' }} onClick={() => goTo(-1)}>~</span>
+          {breadcrumbs.map((crumb, i) => (
+            <React.Fragment key={i}>
+              <span style={{ color: '#888' }}> / </span>
+              <span style={{ cursor: 'pointer', color: '#0066cc' }} onClick={() => goTo(i)}>{crumb}</span>
+            </React.Fragment>
+          ))}
+        </div>
+        <span style={{ fontSize: '12px', color: '#888' }}>{items.length} item{items.length !== 1 ? 's' : ''}</span>
+      </div>
+
+      {/* File grid */}
+      <div
+        style={{ flexGrow: 1, padding: '12px', overflowY: 'auto', display: 'flex', flexWrap: 'wrap', gap: '8px', alignContent: 'flex-start' }}
+        onClick={() => setSelected(null)}
+      >
+        {items.length === 0 && (
+          <div style={{ width: '100%', textAlign: 'center', color: '#aaa', marginTop: '50px', fontSize: '14px' }}>
+            <div style={{ fontSize: '48px', marginBottom: '10px' }}>📭</div>
+            This folder is empty
+          </div>
+        )}
+        {items.map(([name, n]) => {
+          const emoji = n.type === 'dir' ? '📂' : getFileIcon(name);
+          const isSelected = selected === name;
+          return (
+            <div
+              key={name}
+              style={{
+                ...explorerItemStyle,
+                background: isSelected ? '#cce5ff' : 'transparent',
+                border: isSelected ? '2px solid #66aaff' : '2px solid transparent',
+              }}
+              onClick={(e) => { e.stopPropagation(); playSound('click'); setSelected(name); }}
+              onDoubleClick={() => { if (n.type === 'dir') navigate(name); }}
+            >
+              <div style={{ fontSize: '40px', lineHeight: 1, marginBottom: '5px' }}>{emoji}</div>
+              <div style={{ fontSize: '12px', textAlign: 'center', wordBreak: 'break-word', maxWidth: '84px', lineHeight: '1.3', color: '#222' }}>{name}</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Status bar */}
+      <div style={{ padding: '4px 10px', background: '#f0f0f0', borderTop: '1px solid #ccc', fontSize: '11px', color: '#666' }}>
+        {selected ? `Selected: ${selected}` : `${items.length} object${items.length !== 1 ? 's' : ''}`}
+      </div>
+    </div>
+  );
+};
+
 /* --- NEW CRAZY APPLICATIONS --- */
 
-const TerminalContent = () => {
+const TerminalContent = ({ fsProps }) => {
+    const { vfs, setVfs } = fsProps || {};
     const [history, setHistory] = useState(['OS Terminal v1.0.0', 'Type "help" to see available commands.']);
     const [input, setInput] = useState('');
+    const [currentPath, setCurrentPath] = useState('/');
     const endRef = useRef(null);
 
-    const handleCommand = (e) => {
-        if(e.key === 'Enter') {
-            playSound('click');
-            const cmd = input.trim().toLowerCase();
-            const newHist = [...history, `user@host:~$ ${input}`];
-            if (cmd === 'help') {
-                newHist.push('Commands: help, clear, date, whoami, echo, sudo, matrix, rickroll');
-            } else if (cmd === 'clear') {
-                setHistory([]);
-                setInput('');
-                return;
-            } else if (cmd === 'date') {
-                newHist.push(new Date().toString());
-            } else if (cmd === 'whoami') {
-                newHist.push('root (just kidding, you are guest)');
-            } else if (cmd.startsWith('echo ')) {
-                newHist.push(input.substring(5));
-            } else if (cmd === 'sudo') {
-                newHist.push('Nice try! This incident will be reported to Santa 🎅.');
-            } else if (cmd === 'matrix') {
-                newHist.push('Wake up, Neo...\nThe Matrix has you...\nFollow the white rabbit.');
-            } else if (cmd === 'rickroll') {
-                newHist.push('Never gonna give you up\nNever gonna let you down\nNever gonna run around and desert you');
-            } else if (cmd !== '') {
-                newHist.push(`Command not found: ${cmd}`);
-            }
-            setHistory(newHist);
-            setInput('');
-            setTimeout(() => endRef.current?.scrollIntoView({ behavior: 'smooth' }), 10);
+    const resolvePath = (target) => {
+        if (!target || target === '.') return currentPath;
+        if (target === '~') return '/';
+        if (target === '..') {
+            if (currentPath === '/') return '/';
+            const p = currentPath.split('/').filter(Boolean);
+            p.pop();
+            return p.length === 0 ? '/' : '/' + p.join('/');
         }
+        if (target.startsWith('/')) return target;
+        return currentPath === '/' ? '/' + target : currentPath + '/' + target;
+    };
+
+    const prompt = `user@os:${currentPath === '/' ? '~' : currentPath}$`;
+
+    const handleCommand = (e) => {
+        if (e.key !== 'Enter') return;
+        playSound('click');
+        const raw = input.trim();
+        const parts = raw.split(/\s+/);
+        const cmd = parts[0].toLowerCase();
+        const newHist = [...history, `${prompt} ${raw}`];
+
+        if (cmd === 'help') {
+            newHist.push('Commands: help, clear, date, whoami, echo, pwd, ls, mkdir, touch, cd, rm, sudo, matrix, rickroll');
+        } else if (cmd === 'clear') {
+            setHistory([]);
+            setInput('');
+            return;
+        } else if (cmd === 'date') {
+            newHist.push(new Date().toString());
+        } else if (cmd === 'whoami') {
+            newHist.push('root (just kidding, you are guest)');
+        } else if (cmd === 'echo') {
+            newHist.push(parts.slice(1).join(' '));
+        } else if (cmd === 'sudo') {
+            newHist.push('Nice try! This incident will be reported to Santa 🎅.');
+        } else if (cmd === 'matrix') {
+            newHist.push('Wake up, Neo...\nThe Matrix has you...\nFollow the white rabbit.');
+        } else if (cmd === 'rickroll') {
+            newHist.push('Never gonna give you up\nNever gonna let you down\nNever gonna run around and desert you');
+        } else if (cmd === 'pwd') {
+            newHist.push(currentPath);
+        } else if (cmd === 'ls') {
+            if (!vfs) { newHist.push('(filesystem unavailable)'); }
+            else {
+                const node = getVfsNode(vfs, currentPath);
+                if (node && node.children) {
+                    const items = Object.entries(node.children);
+                    if (items.length === 0) newHist.push('(empty)');
+                    else items.forEach(([name, n]) => newHist.push(`${n.type === 'dir' ? '📂' : getFileIcon(name)}  ${name}${n.type === 'dir' ? '/' : ''}`));
+                }
+            }
+        } else if (cmd === 'mkdir') {
+            if (!parts[1]) { newHist.push('Usage: mkdir <name>'); }
+            else if (!vfs) { newHist.push('(filesystem unavailable)'); }
+            else {
+                const name = parts[1];
+                const node = getVfsNode(vfs, currentPath);
+                if (node.children[name]) {
+                    newHist.push(`mkdir: ${name}: File exists`);
+                } else {
+                    setVfs(prev => {
+                        const next = JSON.parse(JSON.stringify(prev));
+                        getVfsNode(next, currentPath).children[name] = { type: 'dir', children: {} };
+                        return next;
+                    });
+                    newHist.push(`Created directory: ${name}${currentPath === '/' ? ' (visible on desktop)' : ''}`);
+                }
+            }
+        } else if (cmd === 'touch') {
+            if (!parts[1]) { newHist.push('Usage: touch <filename>'); }
+            else if (!vfs) { newHist.push('(filesystem unavailable)'); }
+            else {
+                const name = parts[1];
+                setVfs(prev => {
+                    const next = JSON.parse(JSON.stringify(prev));
+                    const node = getVfsNode(next, currentPath);
+                    if (!node.children[name]) node.children[name] = { type: 'file' };
+                    return next;
+                });
+                newHist.push(`Created file: ${name}${currentPath === '/' ? ' (visible on desktop)' : ''}`);
+            }
+        } else if (cmd === 'cd') {
+            if (!vfs) { newHist.push('(filesystem unavailable)'); }
+            else {
+                const target = parts[1] || '/';
+                const newPath = resolvePath(target);
+                const node = getVfsNode(vfs, newPath);
+                if (!node) newHist.push(`cd: ${target}: No such file or directory`);
+                else if (node.type !== 'dir') newHist.push(`cd: ${target}: Not a directory`);
+                else setCurrentPath(newPath);
+            }
+        } else if (cmd === 'rm') {
+            if (!parts[1]) { newHist.push('Usage: rm <name>'); }
+            else if (!vfs) { newHist.push('(filesystem unavailable)'); }
+            else {
+                const name = parts[1];
+                const node = getVfsNode(vfs, currentPath);
+                if (!node.children[name]) {
+                    newHist.push(`rm: ${name}: No such file or directory`);
+                } else {
+                    setVfs(prev => {
+                        const next = JSON.parse(JSON.stringify(prev));
+                        delete getVfsNode(next, currentPath).children[name];
+                        return next;
+                    });
+                    newHist.push(`Removed: ${name}`);
+                }
+            }
+        } else if (raw !== '') {
+            newHist.push(`Command not found: ${cmd}. Type "help" for commands.`);
+        }
+
+        setHistory(newHist);
+        setInput('');
+        setTimeout(() => endRef.current?.scrollIntoView({ behavior: 'smooth' }), 10);
     };
 
     return (
         <div style={{ backgroundColor: '#0c0c0c', color: '#0f0', fontFamily: 'monospace', height: '100%', margin: '-10px', padding: '10px', boxSizing: 'border-box', overflowY: 'auto' }} onClick={() => document.getElementById('term-input')?.focus()}>
             {history.map((line, i) => <div key={i} style={{ whiteSpace: 'pre-wrap', marginBottom: '4px' }}>{line}</div>)}
             <div style={{ display: 'flex', marginTop: '5px' }}>
-                <span style={{ marginRight: '8px' }}>user@host:~$</span>
-                <input 
+                <span style={{ marginRight: '8px' }}>{prompt}</span>
+                <input
                     id="term-input"
-                    type="text" 
-                    value={input} 
-                    onChange={(e) => setInput(e.target.value)} 
+                    type="text"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleCommand}
                     style={{ background: 'transparent', color: '#0f0', border: 'none', outline: 'none', flexGrow: 1, fontFamily: 'monospace', fontSize: '14px' }}
                     autoComplete="off"
