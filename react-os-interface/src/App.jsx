@@ -605,17 +605,33 @@ const TerminalContent = () => {
 };
 
 const NotepadContent = () => {
+    const [text, setText] = useState("Start typing your notes here...");
+
+    const handleSavePDF = async () => {
+        playSound('click');
+        try {
+            const { jsPDF } = await import("jspdf");
+            const doc = new jsPDF();
+            const splitText = doc.splitTextToSize(text, 180);
+            doc.text(splitText, 10, 10);
+            doc.save("notepad-note.pdf");
+        } catch (error) {
+            console.error("Error generating PDF:", error);
+        }
+    };
+
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%', margin: '-10px', backgroundColor: '#fff', color: '#000' }}>
-            <div style={{ borderBottom: '1px solid #ccc', padding: '5px', background: '#f0f0f0', color: '#000', fontSize: '12px', display: 'flex', gap: '10px' }}>
-                <span style={{cursor:'pointer'}}>File</span>
+            <div style={{ borderBottom: '1px solid #ccc', padding: '5px', background: '#f0f0f0', color: '#000', fontSize: '12px', display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <span style={{cursor:'pointer'}} onClick={handleSavePDF}>💾 Save as PDF</span>
                 <span style={{cursor:'pointer'}}>Edit</span>
                 <span style={{cursor:'pointer'}}>Format</span>
                 <span style={{cursor:'pointer'}}>Help</span>
             </div>
             <textarea 
+                value={text}
+                onChange={(e) => setText(e.target.value)}
                 style={{ flexGrow: 1, resize: 'none', border: 'none', outline: 'none', padding: '10px', fontFamily: 'Arial, sans-serif', fontSize: '14px', width: '100%', boxSizing: 'border-box' }} 
-                defaultValue="Start typing your notes here..."
             />
         </div>
     );
