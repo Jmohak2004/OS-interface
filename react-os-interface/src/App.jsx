@@ -90,7 +90,8 @@ const ICONS = [
   { id: 'terminal', label: 'Terminal', icon: '⌨️' },
   { id: 'notepad', label: 'Notepad', icon: '📝' },
   { id: 'calculator', label: 'Calculator', icon: '🧮' },
-  { id: 'recycle', label: 'Recycle Bin', icon: '🗑️' }
+  { id: 'recycle', label: 'Recycle Bin', icon: '🗑️' },
+  { id: 'vault', label: 'Vault', icon: '🔐' }
 ];
 
 function App() {
@@ -374,6 +375,7 @@ const WindowContent = ({ id, fsProps }) => {
     case 'notepad': return <NotepadContent />;
     case 'calculator': return <CalculatorContent />;
     case 'recycle': return <RecycleBinContent />;
+    case 'vault': return <VaultContent />;
     default: return <div>Unknown Window</div>;
   }
 };
@@ -994,6 +996,206 @@ const RecycleBinContent = () => {
             )}
         </div>
     );
+};
+
+const VAULT_API = 'http://localhost:3001/api/vault';
+
+const hashPassword = async (pwd) => {
+  const buf = new TextEncoder().encode(pwd);
+  const hash = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+};
+
+const VaultContent = () => {
+  const [phase, setPhase] = useState('lock');
+  const [password, setPassword] = useState('');
+  const [vaultId, setVaultId] = useState(null);
+  const [images, setImages] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [lightbox, setLightbox] = useState(null);
+  const fileInputRef = useRef(null);
+
+  const unlock = async () => {
+    if (!password.trim()) return;
+    setLoading(true);
+    setError('');
+    try {
+      const id = await hashPassword(password);
+      const res = await fetch(`${VAULT_API}/images`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vaultId: id })
+      });
+      if (!res.ok) throw new Error();
+      setImages(await res.json());
+      setVaultId(id);
+      setPhase('gallery');
+      playSound('open');
+    } catch {
+      setError('Cannot connect to vault server. Make sure it is running on port 3001.');
+    }
+    setLoading(false);
+  };
+
+  const uploadImage = async (e) => {
+    const file = e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    setUploading(true);
+    setError('');
+    const form = new FormData();
+    form.append('vaultId', vaultId);
+    form.append('image', file);
+    try {
+      const res = await fetch(`${VAULT_API}/upload`, { method: 'POST', body: form });
+      if (!res.ok) throw new Error((await res.json()).error || 'Upload failed');
+      const newImg = await res.json();
+      setImages(prev => [{ id: newImg.id, fileName: newImg.fileName, imageData: newImg.imageData, uploadedAt: newImg.uploadedAt }, ...prev]);
+      playSound('click');
+    } catch (err) {
+      setError(err.message || 'Upload failed');
+    }
+    setUploading(false);
+  };
+
+  const deleteImage = async (id) => {
+    try {
+      await fetch(`${VAULT_API}/images/${id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vaultId })
+      });
+      setImages(prev => prev.filter(img => img.id !== id));
+      playSound('close');
+    } catch {
+      setError('Delete failed');
+    }
+  };
+
+  const lock = () => {
+    setPhase('lock');
+    setPassword('');
+    setVaultId(null);
+    setImages([]);
+    setError('');
+    setLightbox(null);
+  };
+
+  if (phase === 'lock') {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)', color: '#fff', margin: '-10px' }}>
+        <div style={{ fontSize: '64px', marginBottom: '16px', filter: 'drop-shadow(0 0 20px #6c63ff88)' }}>🔐</div>
+        <h2 style={{ margin: '0 0 6px', color: '#e0e0ff', fontSize: '22px', fontWeight: 700 }}>Secret Vault</h2>
+        <p style={{ color: '#666', fontSize: '13px', marginBottom: '28px', textAlign: 'center', lineHeight: 1.5 }}>
+          Enter your password to access your vault.<br />
+          Same password = same vault on any device.
+        </p>
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && unlock()}
+          placeholder="Vault password"
+          autoFocus
+          style={{ padding: '12px 18px', fontSize: '15px', borderRadius: '8px', border: '1px solid #333', background: '#0f0f1e', color: '#fff', width: '230px', marginBottom: '14px', outline: 'none', textAlign: 'center', letterSpacing: '2px' }}
+        />
+        {error && <div style={{ color: '#ff6b6b', fontSize: '12px', marginBottom: '12px', maxWidth: '260px', textAlign: 'center' }}>{error}</div>}
+        <button
+          onClick={unlock}
+          disabled={loading || !password.trim()}
+          style={{ padding: '11px 36px', background: loading ? '#444' : '#6c63ff', color: '#fff', border: 'none', borderRadius: '8px', cursor: loading ? 'default' : 'pointer', fontSize: '15px', fontWeight: 600, letterSpacing: '0.5px', transition: 'background 0.2s' }}
+        >
+          {loading ? 'Unlocking...' : 'Unlock Vault'}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', margin: '-10px', background: '#0f0f1e', color: '#fff', position: 'relative' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#16213e', borderBottom: '1px solid #2a2a4e', flexShrink: 0 }}>
+        <span style={{ fontWeight: 700, fontSize: '15px' }}>🔐 My Vault</span>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {uploading && <span style={{ fontSize: '12px', color: '#888' }}>Uploading...</span>}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            style={{ padding: '6px 14px', background: '#6c63ff', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}
+          >
+            + Add Image
+          </button>
+          <button
+            onClick={lock}
+            style={{ padding: '6px 12px', background: '#2a2a4e', color: '#aaa', border: '1px solid #333', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}
+          >
+            🔒 Lock
+          </button>
+        </div>
+        <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={uploadImage} />
+      </div>
+
+      {/* Error */}
+      {error && (
+        <div style={{ padding: '8px 14px', background: '#3a1a1a', color: '#ff6b6b', fontSize: '12px', borderBottom: '1px solid #5a2a2a' }}>
+          {error}
+        </div>
+      )}
+
+      {/* Gallery */}
+      <div style={{ flexGrow: 1, overflowY: 'auto', padding: '14px', display: 'flex', flexWrap: 'wrap', gap: '10px', alignContent: 'flex-start' }}>
+        {images.length === 0 && (
+          <div style={{ width: '100%', textAlign: 'center', color: '#444', marginTop: '60px' }}>
+            <div style={{ fontSize: '52px', marginBottom: '12px' }}>🖼️</div>
+            <div style={{ fontSize: '15px' }}>No images yet.</div>
+            <div style={{ fontSize: '12px', marginTop: '6px', color: '#333' }}>Click "+ Add Image" to upload your first photo.</div>
+          </div>
+        )}
+        {images.map((img) => (
+          <div
+            key={img.id}
+            style={{ position: 'relative', width: '110px', height: '110px', borderRadius: '8px', overflow: 'hidden', border: '2px solid #2a2a4e', cursor: 'pointer', flexShrink: 0, transition: 'border-color 0.15s' }}
+            onClick={() => setLightbox(img)}
+            onMouseEnter={e => e.currentTarget.style.borderColor = '#6c63ff'}
+            onMouseLeave={e => e.currentTarget.style.borderColor = '#2a2a4e'}
+          >
+            <img src={img.imageData} alt={img.fileName} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'linear-gradient(transparent, rgba(0,0,0,0.85))', padding: '18px 6px 5px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+              <span style={{ fontSize: '9px', color: '#ccc', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '80px' }}>{img.fileName}</span>
+              <span
+                style={{ fontSize: '11px', color: '#ff6b6b', cursor: 'pointer', fontWeight: 700, lineHeight: 1, padding: '2px' }}
+                onClick={(e) => { e.stopPropagation(); deleteImage(img.id); }}
+              >✕</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Status bar */}
+      <div style={{ padding: '5px 14px', background: '#16213e', borderTop: '1px solid #2a2a4e', fontSize: '11px', color: '#444', flexShrink: 0 }}>
+        {images.length} image{images.length !== 1 ? 's' : ''} stored
+      </div>
+
+      {/* Lightbox */}
+      {lightbox && (
+        <div
+          style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.92)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 10, padding: '16px' }}
+          onClick={() => setLightbox(null)}
+        >
+          <img
+            src={lightbox.imageData}
+            alt={lightbox.fileName}
+            style={{ maxWidth: '100%', maxHeight: 'calc(100% - 60px)', borderRadius: '6px', objectFit: 'contain', boxShadow: '0 0 40px #0008' }}
+          />
+          <div style={{ marginTop: '10px', color: '#aaa', fontSize: '12px', textAlign: 'center' }}>
+            {lightbox.fileName} · click anywhere to close
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default App;
