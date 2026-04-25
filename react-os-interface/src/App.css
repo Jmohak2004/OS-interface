@@ -1,0 +1,252 @@
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Courier New', monospace;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    color: #00ff00;
+    overflow: hidden;
+    height: 100vh;
+    position: relative;
+    transition: opacity 1s ease-out;
+}
+
+body.shutting-down {
+    opacity: 0;
+}
+
+/* Desktop background */
+.desktop {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23ffffff" width="100" height="100" opacity="0.05"/><circle fill="%23ffffff" cx="20" cy="20" r="1" opacity="0.1"/><circle fill="%23ffffff" cx="80" cy="80" r="1" opacity="0.1"/><circle fill="%23ffffff" cx="50" cy="50" r="0.5" opacity="0.05"/></svg>');
+}
+
+/* Taskbar */
+.taskbar {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    height: 40px;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 10px;
+    box-sizing: border-box;
+    border-top: 1px solid #333;
+    z-index: 1000;
+}
+
+.start-button {
+    background: #0078d4;
+    color: #fff;
+    padding: 5px 10px;
+    border: 1px solid #333;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 3px;
+}
+
+.start-menu {
+    position: absolute;
+    bottom: 40px;
+    left: 10px;
+    background: #000;
+    color: #fff;
+    padding: 10px;
+    border: 1px solid #333;
+    font-size: 12px;
+    display: none;
+    min-width: 150px;
+    z-index: 1001;
+}
+
+.start-menu.open {
+    display: block;
+}
+
+.start-menu ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.start-menu li {
+    padding: 5px;
+    cursor: pointer;
+}
+
+.start-menu li:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.taskbar-apps {
+    display: flex;
+    gap: 5px;
+}
+
+.app-button {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    padding: 5px 8px;
+    border: 1px solid #333;
+    font-size: 10px;
+    cursor: pointer;
+    border-radius: 3px;
+}
+
+.app-button.active {
+    background: #0078d4;
+}
+
+.clock {
+    color: #fff;
+    font-size: 12px;
+}
+
+/* Windows */
+.window {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.9);
+    border: 2px solid #333;
+    border-top: 20px solid #0078d4;
+    min-width: 300px;
+    min-height: 200px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    display: none;
+    z-index: 10;
+    resize: both;
+    overflow: auto;
+}
+
+.window.active {
+    display: block;
+    z-index: 100;
+}
+
+.window.minimized {
+    height: 20px !important;
+    min-height: 20px !important;
+    resize: none;
+}
+
+.window-titlebar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 20px;
+    background: #0078d4;
+    color: #fff;
+    font-size: 12px;
+    padding: 2px 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: move;
+    user-select: none;
+}
+
+.window-titlebar-controls {
+    display: flex;
+    gap: 2px;
+}
+
+.control-btn {
+    width: 16px;
+    height: 16px;
+    background: #fff;
+    color: #000;
+    border: none;
+    cursor: pointer;
+    font-size: 10px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 2px;
+}
+
+.control-btn:hover {
+    background: #ddd;
+}
+
+.window-content {
+    padding: 10px;
+    margin-top: 20px;
+    overflow-y: auto;
+    height: calc(100% - 20px);
+}
+
+/* Desktop icons */
+.icon {
+    position: absolute;
+    text-align: center;
+    color: #fff;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 5px;
+    transition: background 0.2s;
+    user-select: none;
+}
+
+.icon:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.icon img {
+    width: 48px;
+    height: 48px;
+    display: block;
+    margin: 0 auto 5px;
+}
+
+/* Position icons */
+.icon-about { top: 50px; left: 50px; }
+.icon-projects { top: 50px; left: 200px; }
+.icon-skills { top: 50px; left: 350px; }
+.icon-paint { top: 150px; left: 50px; }
+.icon-games { top: 150px; left: 200px; }
+.icon-camera { top: 150px; left: 350px; }
+.icon-contact { top: 250px; left: 50px; }
+
+/* Paint specific */
+#paint-canvas {
+    border: 1px solid #fff;
+    background: #fff;
+    cursor: crosshair;
+}
+
+/* Games specific */
+.tic-tac-toe {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+    width: 150px;
+    height: 150px;
+    margin: 10px auto;
+}
+
+.tic-cell {
+    background: #ddd;
+    border: 1px solid #999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.tic-cell:hover {
+    background: #ccc;
+}
+
+/* Camera specific */
+#camera-video {
+    width: 100%;
+    height: 200px;
+    background: #000;
+}
